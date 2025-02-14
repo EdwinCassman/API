@@ -1,11 +1,12 @@
-using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
-using API.Models.FilmStudio; 
+using Microsoft.IdentityModel.Tokens;
+using API.Models.FilmStudio;
 using System;
-using System.Collections.Generic;
-using System.Threading.Tasks;
+using System.IdentityModel.Tokens.Jwt;
 using System.Security.Claims;
+using System.Text;
+using System.Threading.Tasks;
 
 namespace API.Controllers
 {
@@ -14,106 +15,96 @@ namespace API.Controllers
     public class FilmStudioController : ControllerBase
     {
         private readonly FilmStudioDbContext _context;
+        private readonly IConfiguration _configuration;
 
-        public FilmStudioController(FilmStudioDbContext context)
+        public FilmStudioController(FilmStudioDbContext context, IConfiguration configuration)
         {
             _context = context;
+            _configuration = configuration;
         }
 
-        // POST: api/filmstudio/register
         [HttpPost("register")]
-        public async Task<ActionResult<FilmStudio>> RegisterFilmStudio([FromBody] RegisterFilmStudio studio)
+        public async Task<IActionResult> RegisterFilmStudio([FromBody] RegisterFilmStudio filmStudioRegister)
         {
-            if (studio == null || string.IsNullOrEmpty(studio.Name))
+            if (filmStudioRegister == null)
             {
-                return BadRequest("Film studio information is incomplete.");
+                return BadRequest("Film studio data is invalid.");
             }
 
-            try
+            var passwordHash = BCrypt.Net.BCrypt.HashPassword(filmStudioRegister.Password);
+
+            var newFilmStudio = new FilmStudio
             {
-                var newFilmStudio = new FilmStudio
-                {
-                    Name = studio.Name,
-                    Email = studio.Email
-                };
-
-                _context.FilmStudios.Add(newFilmStudio);
-                await _context.SaveChangesAsync();
-
-                return CreatedAtAction(nameof(GetFilmStudio), new { id = newFilmStudio.Id }, newFilmStudio);
-            }
-            catch (Exception ex)
-            {
-                return StatusCode(StatusCodes.Status500InternalServerError, $"Error creating a new Film Studio: {ex.Message}");
-            }
-        }
-
-        // GET: api/filmstudio/{id}
-        [HttpGet("{id}")]
-        public async Task<ActionResult<object>> GetFilmStudio(int id)
-        {
-            var filmStudio = await _context.FilmStudios  // Ladda RentedFilmCopies om nödvändigt
-                .FirstOrDefaultAsync(fs => fs.Id == id);
-
-            if (filmStudio == null)
-            {
-                return NotFound($"Film Studio with ID {id} not found.");
-            }
-
-            // Hämta användarens roll från JWT-tokenet
-            var userRole = User.Claims.FirstOrDefault(c => c.Type == ClaimTypes.Role)?.Value;
-            var userFilmStudioId = User.Claims.FirstOrDefault(c => c.Type == "FilmStudioId")?.Value;
-
-            // Kontrollera om användaren är en admin
-            if (userRole == "Admin")
-            {
-                // Admin får se all information
-                return Ok(filmStudio);
-            }
-
-            // Om den autentiserade användaren är en filmstudio och det är den filmstudio som eftersöks
-            if (userRole == "FilmStudio" && userFilmStudioId == id.ToString())
-            {
-                return Ok(filmStudio);  // Filmstudio får också se all information om sig själv
-            }
-
-            // För alla andra (oautentiserad användare eller annan filmstudio), ta bort City och RentedFilmCopies
-            var limitedFilmStudio = new
-            {
-                filmStudio.Id,
-                filmStudio.Name,
-                filmStudio.Email  // Här kan du lägga till fler egenskaper som du vill visa för icke-autentiserade användare
+                Name = filmStudioRegister.Name,
+                PasswordHash = passwordHash,
+                Email = filmStudioRegister.Email,
+                City = filmStudioRegister.City
             };
 
-            return Ok(limitedFilmStudio);
+            _context.FilmStudios.Add(newFilmStudio);
+            await _context.SaveChangesAsync();
+
+            return Ok(new
+            {
+                FilmStudioId = newFilmStudio.Id,
+                Name = newFilmStudio.Name,
+                Email = newFilmStudio.Email,
+                City = newFilmStudio.City
+            });
         }
 
-
-        // GET: api/filmstudio
-        [HttpGet]
-        public async Task<ActionResult<IEnumerable<object>>> GetAllFilmStudios()
+        [HttpPost("authenticate")]
+        public async Task<ActionResult<object>> AuthenticateFilmStudio([FromBody] FilmStudioAuthenticate filmStudioAuth)
         {
-            var userRole = User.Claims.FirstOrDefault(c => c.Type == ClaimTypes.Role)?.Value;
-
-            var filmStudios = await _context.FilmStudios
-                .ToListAsync();
-
-            if (userRole == "Admin")
+            if (filmStudioAuth == null || string.IsNullOrEmpty(filmStudioAuth.Name) || string.IsNullOrEmpty(filmStudioAuth.Password))
             {
-                // 🔸 Admin får se all information
-                return Ok(filmStudios);
+                return BadRequest("Login information is incomplete.");
             }
-            else
+
+            var filmStudio = await _context.FilmStudios.FirstOrDefaultAsync(fs => fs.Name == filmStudioAuth.Name);
+
+            if (filmStudio != null && BCrypt.Net.BCrypt.Verify(filmStudioAuth.Password, filmStudio.PasswordHash))
             {
-                // 🔸 Oautentiserad eller filmstudio → Begränsad information (utan RentedFilmCopies & City)
-                var limitedFilmStudios = filmStudios.Select(fs => new
+                var token = GenerateJwtToken(filmStudio.Name, "FilmStudio", filmStudio.Id);
+
+                return Ok(new
                 {
-                    fs.Id,
-                    fs.Name
+                    FilmStudioId = filmStudio.Id,
+                    Username = filmStudio.Name,
+                    Role = "FilmStudio",
+                    FilmStudio = new
+                    {
+                        filmStudio.Id,
+                        filmStudio.Name,
+                        filmStudio.Email
+                    },
+                    Token = token
                 });
-
-                return Ok(limitedFilmStudios);
             }
+
+            return Unauthorized("Invalid username or password.");
+        }
+
+        private string GenerateJwtToken(string name, string role, int userId)
+        {
+            var securityKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(_configuration["Jwt:Key"]));
+            var credentials = new SigningCredentials(securityKey, SecurityAlgorithms.HmacSha256);
+
+            var claims = new[]
+            {
+                new Claim(ClaimTypes.Name, name),
+                new Claim(ClaimTypes.Role, role),
+                new Claim(ClaimTypes.NameIdentifier, userId.ToString())
+            };
+
+            var token = new JwtSecurityToken(
+                _configuration["Jwt:Issuer"],
+                _configuration["Jwt:Audience"],
+                claims,
+                expires: DateTime.UtcNow.AddHours(2),
+                signingCredentials: credentials);
+
+            return new JwtSecurityTokenHandler().WriteToken(token);
         }
     }
 }

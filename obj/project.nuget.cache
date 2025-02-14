@@ -1,8 +1,8 @@
 {
   "version": 2,
-  "dgSpecHash": "JLCVG1ggVl8=",
+  "dgSpecHash": "JHebZ+cFNR4=",
   "success": true,
-  "projectFilePath": "/Users/edwincassman/Documents/VSCODE-SKOLA/Filmstudion/Filmstudion/API/API.csproj",
+  "projectFilePath": "/Users/edwincassman/Documents/VSCODE-SKOLA/API-Filmstudio/API/API.csproj",
   "expectedPackageFiles": [
     "/Users/edwincassman/.nuget/packages/bcrypt.net-next/4.0.3/bcrypt.net-next.4.0.3.nupkg.sha512",
     "/Users/edwincassman/.nuget/packages/microsoft.aspnetcore.authentication.jwtbearer/9.0.1/microsoft.aspnetcore.authentication.jwtbearer.9.0.1.nupkg.sha512",

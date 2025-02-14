@@ -18,10 +18,12 @@ namespace API.Controllers
     public class FilmController : ControllerBase
     {
         private readonly FilmStudioDbContext _context;
+        private readonly ILogger<FilmController> _logger;
 
-        public FilmController(FilmStudioDbContext context)
+        public FilmController(FilmStudioDbContext context, ILogger<FilmController> logger)
         {
             _context = context;
+            _logger = logger;
         }
 
         // GET: /api/films
@@ -215,7 +217,145 @@ namespace API.Controllers
             return Ok(FilmMapper.ToDto(film));
         }
 
+        [HttpPost("rent")]
+        [Authorize(Roles = "FilmStudio")]
+        public async Task<IActionResult> RentFilm(int id, int studioid)
+        {
+            _logger.LogInformation("RentFilm called with film id: {FilmId} and studio id: {StudioId}", id, studioid);
 
+            var film = await _context.Films.Include(f => f.FilmCopies).FirstOrDefaultAsync(f => f.Id == id);
+            if (film == null)
+            {
+                _logger.LogWarning("Film not found with id: {FilmId}", id);
+                return Conflict("Film not found.");
+            }
+
+            if (film.AvailableCopies <= 0)
+            {
+                _logger.LogWarning("No available copies for film id: {FilmId}", id);
+                return Conflict("No available copies.");
+            }
+
+            var studio = await _context.FilmStudios.Include(fs => fs.RentedFilmCopies).FirstOrDefaultAsync(fs => fs.Id == studioid);
+            if (studio == null)
+            {
+                _logger.LogWarning("Studio not found with id: {StudioId}", studioid);
+                return Conflict("Studio not found.");
+            }
+
+            var userId = User.Claims.FirstOrDefault(c => c.Type == ClaimTypes.NameIdentifier)?.Value;
+            _logger.LogInformation("Authenticated user id: {UserId}", userId);
+
+            if (userId == null || userId != studioid.ToString())
+            {
+                _logger.LogWarning("Unauthorized access by user id: {UserId}", userId);
+                return Unauthorized("Unauthorized access.");
+            }
+
+            var existingRental = studio.RentedFilmCopies.FirstOrDefault(fc => fc.FilmId == id);
+            if (existingRental != null)
+            {
+                _logger.LogWarning("Studio id: {StudioId} already rented film id: {FilmId}", studioid, id);
+                return StatusCode(403, "Studio already rented this film.");
+            }
+
+            var filmCopy = film.FilmCopies.FirstOrDefault(fc => fc.IsAvailable);
+            if (filmCopy == null)
+            {
+                _logger.LogWarning("No available copies for film id: {FilmId}", id);
+                return Conflict("No available copies.");
+            }
+
+            filmCopy.IsAvailable = false;
+            filmCopy.RentedByStudioId = studioid;
+            film.AvailableCopies--;
+            studio.RentedFilmCopies.Add(filmCopy);
+
+            await _context.SaveChangesAsync();
+
+            _logger.LogInformation("Film id: {FilmId} rented successfully by studio id: {StudioId}", id, studioid);
+            return Ok("Film rented successfully.");
+        }
+
+        [HttpPost("return")]
+        [Authorize(Roles = "FilmStudio")]
+        public async Task<IActionResult> ReturnFilm(int id, int studioid)
+        {
+            _logger.LogInformation("ReturnFilm called with film id: {FilmId} and studio id: {StudioId}", id, studioid);
+
+            var film = await _context.Films.Include(f => f.FilmCopies).FirstOrDefaultAsync(f => f.Id == id);
+            if (film == null)
+            {
+                _logger.LogWarning("Film not found with id: {FilmId}", id);
+                return Conflict("Film not found.");
+            }
+
+            var studio = await _context.FilmStudios.Include(fs => fs.RentedFilmCopies).FirstOrDefaultAsync(fs => fs.Id == studioid);
+            if (studio == null)
+            {
+                _logger.LogWarning("Studio not found with id: {StudioId}", studioid);
+                return Conflict("Studio not found.");
+            }
+
+            var userId = User.Claims.FirstOrDefault(c => c.Type == ClaimTypes.NameIdentifier)?.Value;
+            _logger.LogInformation("Authenticated user id: {UserId}", userId);
+
+            if (userId == null || userId != studioid.ToString())
+            {
+                _logger.LogWarning("Unauthorized access by user id: {UserId}", userId);
+                return Unauthorized("Unauthorized access.");
+            }
+
+            var filmCopy = studio.RentedFilmCopies.FirstOrDefault(fc => fc.FilmId == id && fc.RentedByStudioId == studioid);
+            if (filmCopy == null)
+            {
+                _logger.LogWarning("No rental found for film id: {FilmId} by studio id: {StudioId}", id, studioid);
+                return Conflict("No rental found.");
+            }
+
+            filmCopy.IsAvailable = true;
+            filmCopy.RentedByStudioId = null;
+            film.AvailableCopies++;
+            studio.RentedFilmCopies.Remove(filmCopy);
+
+            await _context.SaveChangesAsync();
+
+            _logger.LogInformation("Film id: {FilmId} returned successfully by studio id: {StudioId}", id, studioid);
+            return Ok("Film returned successfully.");
+        }
+
+        [HttpGet("/api/mystudio/rentals")]
+        [Authorize(Roles = "FilmStudio")]
+        public async Task<IActionResult> GetRentedFilms()
+        {
+            var userId = User.Claims.FirstOrDefault(c => c.Type == ClaimTypes.NameIdentifier)?.Value;
+            _logger.LogInformation("GetRentedFilms called by user id: {UserId}", userId);
+
+            if (userId == null)
+            {
+                _logger.LogWarning("Unauthorized access by user id: {UserId}", userId);
+                return Unauthorized("Unauthorized access.");
+            }
+
+            var studioId = int.Parse(userId);
+            var studio = await _context.FilmStudios.Include(fs => fs.RentedFilmCopies).ThenInclude(fc => fc.Film).FirstOrDefaultAsync(fs => fs.Id == studioId);
+            if (studio == null)
+            {
+                _logger.LogWarning("Studio not found with id: {StudioId}", studioId);
+                return Conflict("Studio not found.");
+            }
+
+            var rentedFilms = studio.RentedFilmCopies.Select(fc => new
+            {
+                fc.Id,
+                fc.FilmId,
+                fc.Film.Title,
+                fc.Film.Genre,
+                fc.Film.ReleaseYear
+            }).ToList();
+
+            return Ok(rentedFilms);
+        }
 
     }
 }

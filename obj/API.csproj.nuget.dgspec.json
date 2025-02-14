@@ -1,17 +1,17 @@
 {
   "format": 1,
   "restore": {
-    "/Users/edwincassman/Documents/VSCODE-SKOLA/Filmstudion/Filmstudion/API/API.csproj": {}
+    "/Users/edwincassman/Documents/VSCODE-SKOLA/API-Filmstudio/API/API.csproj": {}
   },
   "projects": {
-    "/Users/edwincassman/Documents/VSCODE-SKOLA/Filmstudion/Filmstudion/API/API.csproj": {
+    "/Users/edwincassman/Documents/VSCODE-SKOLA/API-Filmstudio/API/API.csproj": {
       "version": "1.0.0",
       "restore": {
-        "projectUniqueName": "/Users/edwincassman/Documents/VSCODE-SKOLA/Filmstudion/Filmstudion/API/API.csproj",
+        "projectUniqueName": "/Users/edwincassman/Documents/VSCODE-SKOLA/API-Filmstudio/API/API.csproj",
         "projectName": "API",
-        "projectPath": "/Users/edwincassman/Documents/VSCODE-SKOLA/Filmstudion/Filmstudion/API/API.csproj",
+        "projectPath": "/Users/edwincassman/Documents/VSCODE-SKOLA/API-Filmstudio/API/API.csproj",
         "packagesPath": "/Users/edwincassman/.nuget/packages/",
-        "outputPath": "/Users/edwincassman/Documents/VSCODE-SKOLA/Filmstudion/Filmstudion/API/obj/",
+        "outputPath": "/Users/edwincassman/Documents/VSCODE-SKOLA/API-Filmstudio/API/obj/",
         "projectStyle": "PackageReference",
         "configFilePaths": [
           "/Users/edwincassman/.nuget/NuGet/NuGet.Config"

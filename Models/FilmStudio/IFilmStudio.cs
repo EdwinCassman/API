@@ -1,4 +1,5 @@
 using System.Collections.Generic;
+using Models.Film;
 
 namespace API.Models.FilmStudio
 {
@@ -8,5 +9,7 @@ namespace API.Models.FilmStudio
         string? Name { get; set; }
         string? Email {get; set;}
         string? City {get; set;}
+
+        List<FilmCopy> RentedFilmCopies { get; set; }
     }
 }

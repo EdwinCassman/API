@@ -9,8 +9,9 @@ namespace API.Models.FilmStudio
         public string? Name { get; set; }  
         public string? Email {get; set;}
         public string? City {get; set;}
+        public string PasswordHash {get; set;}
 
-        //public List<FilmCopy> RentedFilmCopies {get; set;}
+        public List<FilmCopy> RentedFilmCopies {get; set;}
     }
 
 }

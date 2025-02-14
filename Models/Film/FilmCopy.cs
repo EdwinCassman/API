@@ -9,6 +9,7 @@ public class FilmCopy
     public int Id { get; set; }
     public int FilmId { get; set; }
     public bool IsAvailable { get; set; }
+    public int? RentedByStudioId {get; set;}
 
     [ForeignKey("FilmId")]
     public Film Film { get; set; }
