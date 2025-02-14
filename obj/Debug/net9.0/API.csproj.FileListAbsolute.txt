@@ -50,8 +50,6 @@
 /Users/edwincassman/Documents/VSCODE-SKOLA/Filmstudion/Filmstudion/API/bin/Debug/net9.0/System.IdentityModel.Tokens.Jwt.dll
 /Users/edwincassman/Documents/VSCODE-SKOLA/API-Filmstudio/API/bin/Debug/net9.0/appsettings.Development.json
 /Users/edwincassman/Documents/VSCODE-SKOLA/API-Filmstudio/API/bin/Debug/net9.0/appsettings.json
-/Users/edwincassman/Documents/VSCODE-SKOLA/API-Filmstudio/API/bin/Debug/net9.0/Frontend/FilmStudio-FE/package-lock.json
-/Users/edwincassman/Documents/VSCODE-SKOLA/API-Filmstudio/API/bin/Debug/net9.0/Frontend/FilmStudio-FE/package.json
 /Users/edwincassman/Documents/VSCODE-SKOLA/API-Filmstudio/API/bin/Debug/net9.0/API.staticwebassets.endpoints.json
 /Users/edwincassman/Documents/VSCODE-SKOLA/API-Filmstudio/API/bin/Debug/net9.0/API
 /Users/edwincassman/Documents/VSCODE-SKOLA/API-Filmstudio/API/bin/Debug/net9.0/API.deps.json

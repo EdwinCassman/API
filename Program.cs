@@ -14,6 +14,16 @@ builder.Services.AddControllers();
 builder.Services.AddDbContext<FilmStudioDbContext>(opt => 
 opt.UseInMemoryDatabase("FilmStudion"));
 
+builder.Services.AddCors(options => 
+{
+    options.AddDefaultPolicy(policy => 
+    {
+        policy.AllowAnyHeader()
+        .AllowAnyMethod()
+        .AllowAnyOrigin();
+    });
+});
+
 var key = Encoding.UTF8.GetBytes(builder.Configuration["Jwt:Key"]);
 builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
     .AddJwtBearer(options =>
@@ -38,6 +48,8 @@ if (app.Environment.IsDevelopment())
 {
     app.MapOpenApi();
 }
+
+app.UseCors();
 
 app.UseAuthentication();
 app.UseHttpsRedirection();
