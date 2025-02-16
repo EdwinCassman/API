@@ -96,3 +96,5 @@
 /Users/edwincassman/Documents/VSCODE-SKOLA/API-Filmstudio/API/obj/Debug/net9.0/API.pdb
 /Users/edwincassman/Documents/VSCODE-SKOLA/API-Filmstudio/API/obj/Debug/net9.0/API.genruntimeconfig.cache
 /Users/edwincassman/Documents/VSCODE-SKOLA/API-Filmstudio/API/obj/Debug/net9.0/ref/API.dll
+/Users/edwincassman/Documents/VSCODE-SKOLA/API-Filmstudio/API/bin/Debug/net9.0/API-frontend/package-lock.json
+/Users/edwincassman/Documents/VSCODE-SKOLA/API-Filmstudio/API/bin/Debug/net9.0/API-frontend/package.json
